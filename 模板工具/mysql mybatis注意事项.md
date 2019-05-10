@@ -11,3 +11,11 @@
 			attach 和 des_design_template 两张表，没有attach图片,没必要查出此行（null-前端显示也会出错）
 
 4) 排序操作优先选择主键id 作为排序字段，减少日期类字段的使用
+
+
+
+5) on duplicate key update
+	数据量大的情况下，引起主键不连续自增，可能出现超越mysql int界限的情况
+	update 操作会是 increatment 自增数值 + 1
+
+6) 
