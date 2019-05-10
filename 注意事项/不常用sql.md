@@ -37,7 +37,7 @@ VALUES
  
  - 注意：小心入坑：自增主键不连续
  
- 4、REPLACE INTO replace into 首先尝试插入数据到表中， 1. 如果发现表中已经有此行数据（根据主键或者唯一索引判断）则先删除此行数据，然后插入新的数据。 2. 否则，直接插入新数据。
+4、REPLACE INTO replace into 首先尝试插入数据到表中， 1. 如果发现表中已经有此行数据（根据主键或者唯一索引判断）则先删除此行数据，然后插入新的数据。 2. 否则，直接插入新数据。
 
 ```sql 
     REPLACE INTO org_user_active_record ( user_id, active_day, active_time, ip_address, browser_user_agent )
