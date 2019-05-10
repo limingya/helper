@@ -1,0 +1,100 @@
+1、InputStream流问题：
+     流必须关闭，从文件中读取数据，和梳理数据的业务分开，不要让流贯穿整个代码
+     
+     
+  实例：
+  
+    /**
+     * @desc 根据模板Id查询付费素材的信息
+     * @author zgq
+     * @date 2019/4/30 18:01
+     * @param templateId 模板Id
+     */
+    @Override
+    public ServerResponse getPricedMaterial(int templateId) {
+        //根据模板Id查询模板的各页json信息
+        List<String> templatePageJsonList = getTemplatePageJson(templateId);
+
+        //收集付费信息
+        Set<Long> materialIds = new HashSet<>();
+        for (String templateJson : templatePageJsonList) {
+            JSONObject jsonObject = JSON.parseObject(templateJson);
+            com.alibaba.fastjson.JSONArray jsonArray = jsonObject.getJSONArray("elems");
+            for (int i = 0; i < jsonArray.size(); i++) {
+                JSONObject json = jsonArray.getJSONObject(i);
+                JSONObject elemJson = json.getJSONObject("data-elem");
+                Long materialId = elemJson.getLongValue("id") ;
+                String dataKey = elemJson.getString("data-key");
+                SvgElementTypeEnum dataTypeEnum = SvgElementTypeEnum.getEnumByType(json.getString("data-type"));
+                if (SvgElementTypeEnum.Image.equals(dataTypeEnum) || SvgElementTypeEnum.SvgImage.equals(dataTypeEnum) || SvgElementTypeEnum.BackGround.equals(dataTypeEnum)) {
+                    boolean flag = StringUtils.isNotEmpty(dataKey) &&materialId > 0;
+                    if (flag) {
+                        materialIds.add(materialId);
+                    }
+                }
+            }
+        }
+
+        //批量查询官方素材，并封装数据
+        List<PricedMaterialVo> resultList = new ArrayList<>();
+        if(materialIds.size() == 0){
+            return ServerResponse.createBySuccess(resultList);
+        }
+
+        //封装返回信息
+        List<OfficialGalleryDto> officialGalleryDtos = officialGalleryDao.selectByMaterialIds(materialIds);
+        List<PricedMaterialVo> list = officialGalleryDtos.stream()
+                .filter(o -> o.getSingleTimesAuthorizationPrice() > 0 || o.getExtentionAuthorizationPrice() > 0 || o.getStandardAuthorizationPrice() > 0)
+                .map(o -> {
+                    PricedMaterialVo vo = new PricedMaterialVo();
+                    vo.setMaterialId(o.getMaterialId());
+                    vo.setThumbUrl(pubImg.getPathUrl(StorageBtype.MATERIALS.getAttachFinalKey(o.getFileKey())));
+                    vo.setSingleTimesAuthorizationPrice(o.getSingleTimesAuthorizationPrice());
+                    vo.setStandardAuthorizationPrice(o.getStandardAuthorizationPrice());
+                    vo.setExtentionAuthorizationPrice(o.getExtentionAuthorizationPrice());
+                    vo.setContentType(o.getContentType());
+                    return vo;
+                }).collect(Collectors.toList());
+        return ServerResponse.createBySuccess(list);
+    }
+
+
+
+
+读取分页信息：
+ /**
+     * @desc 根据模板ID查询每页的画布信息
+     * @author zgq
+     * @date 2019/5/5 21:06
+     * @param templateId 模板ID
+     */
+    @Override
+    public List<String> getTemplatePageJson(Integer templateId) {
+        List<DesDesignTemplateJsonDo> templateJsons = getJsonList(templateId);
+        List<String> resultList = new ArrayList<>();
+        InputStream inputStream = null;
+        try {
+            for(DesDesignTemplateJsonDo templateJson : templateJsons) {
+                //读取oss上的模板页json
+                OSSObject ossObject = pubFile.getFile(StorageBtype.PARTIAL_TEMPLATE_JSON.getAttachFinalKey(templateJson.getPageId()));
+                if (ossObject == null) {
+                    continue;
+                }
+                inputStream = ossObject.getObjectContent();
+                String data = IOUtils.toString(inputStream);
+                resultList.add(data);
+            }
+            return resultList;
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if(inputStream != null){
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return resultList;
+    }
