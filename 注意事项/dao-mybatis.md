@@ -120,6 +120,14 @@ join 根据业务场景选择使用的连接方式，
 </mapper>
 ```
 
+## 1.9 更新操作
+  更新操作尽量采用主键更新。更新Dao接口方法名统一设置为：update 
+ 
+## 2.0 mysql数据源选择
+
+  事务操作：新增、删除、修改 也需要添加：
+  @DataSourceRouter(DataSources.SLAVE_DB)
+
 		
 
 # 参见
