@@ -34,6 +34,15 @@ helper
 ```
 
 
+# 提交规范
+
+commit 操作请采用：【目录名】：comment信息
+
+示例： 
+```xml 
+【注意事项】补充更新Controller 、service注意事项 
+```
+
 # 特别鸣谢
 
 - 互帮互助交流小组
