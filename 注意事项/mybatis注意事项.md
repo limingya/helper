@@ -1,3 +1,5 @@
+[TOC]
+
 # mysql mybatis注意事项 
 
 1) sql语句中避免出现or (可能导致索引失效)
