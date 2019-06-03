@@ -1,7 +1,7 @@
 # 页面大块
 
-<#include "/common/header.ftl">
-<#include "/common/space.ftl">
+```html 
+<#include "/common/header.ftl"> <#include "/common/space.ftl">
 <link rel="stylesheet" href="/libs/layui-v2.4.5/css/layui.css" media="all">
 <script src="/libs/tagsinput/jquery.min.js"></script>
 
@@ -18,8 +18,13 @@
 
 <#include "/common/footer.ftl">
 
+```
 
 # 表格
+
+## 页面 
+```html 
+
 <!-- div  表格 -->
 <div>
     <table class="layui-hide" id="" lay-filter=""></table>
@@ -45,58 +50,9 @@
     <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="edit"> 修改</a>
 </script>
 
-
-# 弹窗
-
-<!----------------------------------------------------------- 弹窗 --------------------------------- -->
-<div id="pop_edit_or_video" hidden="hidden" style="display: none;">
-    <div class="layui-form layui-row">
-        <div class="layui-form-item">
-            <a hidden="hidden" id="pop_edit_unique_id"></a>
-            <div class="layui-form-item">
-                <img src="/images/default_avatar.png" alt=""
-                     style="height: 100px ;margin-left: 111px;margin-bottom: 10px;" id="pop_edit_show_thumb" >
-                <div>
-                    <label class="layui-form-label"/>缩略图</label>
-                    <input type="file" name="thumbFile"  id="pop_edit_thumb_file" onchange="thumbFileChange();"
-                           autocomplete="off" class="layui-input" style="width: 200px;height: 38px;" >
-                </div>
-            </div>
-            <div class="layui-form-item">
-                <label class="layui-form-label"/>视频文件</label>
-                <div>
-                    <input type="file" name="metaFile" placeholder="请输入密码" id="pop_edit_meta_file" autocomplete="off"
-                           class="layui-input" style="width: 200px ;height: 38px;">
-                </div>
-            </div>
-			
-			  <div class="layui-form-item">
-                <div>
-                    <label class="layui-form-label"/>标题</label>
-                    <input type="text" name="title" placeholder="请输入标题" id="pop_edit_title" autocomplete="off"
-                           class="layui-input" style="width: 200px;height: 38px;">
-                </div>
-            </div>	
-			
-        </div>
-    </div>
-
-    <div class="layui-input-block">
-        <button class="layui-btn" id="pop_edit_btn_add_video">立即提交</button>
-    </div>
-
-</div>
-
-
-
-
-
-
-# js 渲染
-
-## 表格
-<!-- ---------------------------------------------- js --------------------------------------------------------------- -->
-
+```
+## js
+```javascript
 <!-- ---------------------- 表格加载--------------- -->
 $(function () {
 
@@ -185,17 +141,59 @@ $(function () {
     });
 
 });
+```
 
-<!-- --------------------  日期格式化 ------------------- -->
-function format(datetime) {
-    var date = "";
-    layui.use('util', function () {
-        var util = layui.util;
-        date = util.toDateString(datetime.time);
-    });
-    return date;
-}
 
+# 弹窗
+
+## 页面
+```html 
+
+<!----------------------------------------------------------- 弹窗 --------------------------------- -->
+<div id="pop_edit_or_video" hidden="hidden" style="display: none;">
+    <div class="layui-form layui-row">
+        <div class="layui-form-item">
+            <a hidden="hidden" id="pop_edit_unique_id"></a>
+            <div class="layui-form-item">
+                <img src="/images/default_avatar.png" alt=""
+                     style="height: 100px ;margin-left: 111px;margin-bottom: 10px;" id="pop_edit_show_thumb" >
+                <div>
+                    <label class="layui-form-label"/>缩略图</label>
+                    <input type="file" name="thumbFile"  id="pop_edit_thumb_file" onchange="thumbFileChange();"
+                           autocomplete="off" class="layui-input" style="width: 200px;height: 38px;" >
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label"/>视频文件</label>
+                <div>
+                    <input type="file" name="metaFile" placeholder="请输入密码" id="pop_edit_meta_file" autocomplete="off"
+                           class="layui-input" style="width: 200px ;height: 38px;">
+                </div>
+            </div>
+			
+			  <div class="layui-form-item">
+                <div>
+                    <label class="layui-form-label"/>标题</label>
+                    <input type="text" name="title" placeholder="请输入标题" id="pop_edit_title" autocomplete="off"
+                           class="layui-input" style="width: 200px;height: 38px;">
+                </div>
+            </div>	
+			
+        </div>
+    </div>
+
+    <div class="layui-input-block">
+        <button class="layui-btn" id="pop_edit_btn_add_video">立即提交</button>
+    </div>
+
+</div>
+
+
+
+```
+
+## js
+```javascript
 <!--  ------------------  弹窗 ------------------------- -->
 
  popEditOrVideo = layer.open({
@@ -212,18 +210,42 @@ function format(datetime) {
 layui.use('form', function () {
 	var form = layui.form;
 	form.render();
-});			
-			
-			
-			
+});		
+```
+
+
+
+# 其他常用js
+## js 日期格式化
+
+```javascript
+<!-- --------------------  日期格式化 ------------------- -->
+function format(datetime) {
+    var date = "";
+    layui.use('util', function () {
+        var util = layui.util;
+        date = util.toDateString(datetime.time);
+    });
+    return date;
+}
+```
+
+
+## a标签点击事件
+
+```javascript
 <!--  ------------------  a 标签点击事件 ------------------------- -->	
  <a hidden id="download_csv_template"></a>
   $("#download_csv_template").attr("href",url);
   document.getElementById("download_csv_template").click();
   
+```
   
-## freemark 常用标签
+# freemark 常用标签
 
+## 状态值
+
+```html
 <td>
 	<%
 		var state = row.state;
@@ -238,5 +260,7 @@ layui.use('form', function () {
 </td>
 <td>${(record.processingState == 0) ? string('等待处理' , (record.processingState == 1) ? string("处理成功" , "处理失败"))}</td>
   
+```
+
   
 

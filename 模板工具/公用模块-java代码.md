@@ -89,7 +89,64 @@ public PageResult<TemplateSearchInfoTupleDo> getKeyWordMap(String mapKind,Intege
     }
 ```
 
-# service 编写
+## 分批量获取数据（以1000分隔）
+
+```java
+        //  正式开启
+        LocalDate nowLocalDate = LocalDate.now();
+        //  模拟数据 测试专用  正式删除
+        LocalDate startLocalDate = nowLocalDate.plusDays(-7);
+        LocalDate endLocalDate = nowLocalDate.plusDays(-1);
+        LocalDate loopDate = startLocalDate;
+
+        // TODO 收集集合 
+        HashMap<Integer, MutableInt> oneTemplateIdAndUsageCount = new HashMap<>();
+
+        // 近7天处理数据
+        while (loopDate.isBefore(endLocalDate) || loopDate.isEqual(endLocalDate)) {
+            // TODO 替换dao
+            String suffix = DbTableShardingHelper.calcNameSuffix(loopDate.getYear(), loopDate.getMonth());
+            TemplateUsageDataDo firstData = templateUsageDataShardingDao.getFirstData(suffix, loopDate);
+            if (Objects.nonNull(firstData)) {
+                int beginId = firstData.getId();
+                boolean singleDayContinue = true;
+
+                // TODO 替换dao 从DB 中查询 >= 此ID 的 1000 条数据
+                List<TemplateUsageDataDo> list = templateUsageDataShardingDao.getUserPointBillDos(suffix, beginId, 0, 1000);
+                for (; CollectionUtils.isNotEmpty(list) && singleDayContinue; ) {
+                    if (CollectionUtils.isNotEmpty(list)) {
+                        for (TemplateUsageDataDo loopDo : list) {
+                            // 比较当前数据循环的日期，看是否存在大于循环日期的
+                            Date currentDate = loopDo.getCreateTime();
+                            Instant instant = currentDate.toInstant();
+                            ZoneId zoneId = ZoneId.systemDefault();
+                            LocalDate currentLocalDate = instant.atZone(zoneId).toLocalDate();
+                            if (currentLocalDate.isAfter(loopDate)) {
+                                singleDayContinue = false;
+                                break;
+                            }
+                            
+                            // TODO 统计 逻辑写在此处
+                            
+                            
+                            // 更新开始时间
+                            if (loopDo.getId() > beginId) {
+                                beginId = loopDo.getId() + 1;
+                            }
+                        }
+                        // 替换Dao
+                        list = templateUsageDataShardingDao.getUserPointBillDos(suffix, beginId, 0, 1000);
+                    }
+                }
+            }
+            loopDate = loopDate.plusDays(1);
+        }
+
+```
+
+
+# api service 编写
+
 	ServerResponse getVideoKind(Integer forTest); 
 	尽量使用对象形式，少用ServerResponse
 	示例：List<VideoKindDo> getVideoKind(Integer forTest); 
