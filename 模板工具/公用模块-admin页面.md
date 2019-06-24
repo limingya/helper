@@ -6,6 +6,14 @@
 <script src="/libs/tagsinput/jquery.min.js"></script>
 
 
+<#------------ 页面描述  ---->
+<div class="page-content">
+	<div class="page-header position-relative">
+		<h1>限时抢购&nbsp;&nbsp;<font color="#ccc" size="+1">Flash Sale</font></h1>
+	</div>
+
+</div>
+
 
 
 

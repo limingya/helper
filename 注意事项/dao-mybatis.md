@@ -69,11 +69,11 @@ join 根据业务场景选择使用的连接方式，
 
 ```sql
     UPDATE
-    des_design_template_ad
+		des_design_template_ad
     SET view_times = 
         CASE design_template_ad_id
             <foreach collection="list" item="item" > 
-                WHEN #{item.id} THEN view_times + #{item.view}					
+                WHEN #{item.id} THEN #{}					
             </foreach>
         END
     WHERE
@@ -83,11 +83,12 @@ join 根据业务场景选择使用的连接方式，
     </foreach>
 
    （2.0版本）
-    UPDATE print_center_page_item
+    UPDATE 
+		print_center_page_item
     SET show_order =
     <foreach collection="list" item="item" index="index"
              separator=" " open="case ID" close="end">
-        when #{item.id} then #{item.showOrder}
+        when #{item.id} then #{}
     </foreach>
     where id in
     <foreach collection="list" index="index" item="item"
@@ -128,6 +129,52 @@ join 根据业务场景选择使用的连接方式，
   事务操作：新增、删除、修改 也需要添加：
   @DataSourceRouter(DataSources.SLAVE_DB)
 
+# 2.1 生成插入mapper的java代码
+```java
+	/**
+     * 插入数据
+     */
+    private String getValues(Class clazz,boolean isBatch) {
+        StringBuilder values = new StringBuilder();
+        values.append("(");
+        Field[] fields = clazz.getDeclaredFields();
+        for (Field field : fields) {
+            String propertyName = field.getName();
+            if (propertyName.equals("createTime") || propertyName.equals("updateTime") || propertyName.equals("id")) {
+                continue;
+            }
+            String isBatchStr = isBatch? "item.":"";
+            String value = "#{"+ isBatchStr + propertyName + "}" + ",";
+            if (fields[fields.length - 1].getName().equals(propertyName)) {
+                value = "#{" + isBatchStr +propertyName + "}";
+            }
+            values.append(value);
+        }
+        values.append(")");
+        return values.toString();
+    }
+
+    private String getCollValues(Class clazz) {
+        StringBuilder values = new StringBuilder();
+        values.append("(");
+        Field[] fields = clazz.getDeclaredFields();
+        for (Field field : fields) {
+            String propertyName = field.getName();
+            if (propertyName.equals("createTime") || propertyName.equals("updateTime") || propertyName.equals("id")) {
+                continue;
+            }
+            propertyName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, propertyName);
+            String value = "" + propertyName + "" + ",";
+            if (fields[fields.length - 1].getName().equals(propertyName)) {
+                value = "" + propertyName + "";
+            }
+
+            values.append(value);
+        }
+        values.append(")");
+        return values.toString();
+    }
+```
 		
 
 # 参见

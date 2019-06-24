@@ -3,23 +3,20 @@
 ## admin 
 ```java
 	@Autowired
-    private LocalProperties localProperties;
+    private LocalProperties localProperties;	
 	
-
-	String url = localProperties.getApiV2Domain() + "/keyword/refreshMapCache.do";
+	String url = localProperties.getApiV2Domain() + ".do";
 	Map<String, Object> signMap = new HashMap<>();
 	com.alibaba.fastjson.JSONObject jsonObject = HttpUtil.getBodyStringForApiV2(url,SignUtil.requestMapBasicSign(signMap),3000);
 
 	if(jsonObject != null){
 	 String code = jsonObject.getString("code");
 	 if (HttpStatus.SC_OK == Integer.valueOf(code)) {
-		 return Boolean.TRUE;
-	 }else {
-		 return Boolean.FALSE;
+		 
 	 }
-	}else{
-	return Boolean.FALSE;
 	}
+	
+	
 ```
 
 
@@ -88,61 +85,128 @@ public PageResult<TemplateSearchInfoTupleDo> getKeyWordMap(String mapKind,Intege
         return pageResult;
     }
 ```
+- 注：通过存oss 的缓存，用新文件去覆盖旧文件的更新，一定要考虑内容为空时，旧文件是否删除，若不删除会出现则前端同步出错 
 
-## 分批量获取数据（以1000分隔）
 
+
+## 批量`更新`表中某个`字段`
+	
 ```java
-        //  正式开启
-        LocalDate nowLocalDate = LocalDate.now();
-        //  模拟数据 测试专用  正式删除
-        LocalDate startLocalDate = nowLocalDate.plusDays(-7);
-        LocalDate endLocalDate = nowLocalDate.plusDays(-1);
-        LocalDate loopDate = startLocalDate;
-
-        // TODO 收集集合 
-        HashMap<Integer, MutableInt> oneTemplateIdAndUsageCount = new HashMap<>();
-
-        // 近7天处理数据
-        while (loopDate.isBefore(endLocalDate) || loopDate.isEqual(endLocalDate)) {
-            // TODO 替换dao
-            String suffix = DbTableShardingHelper.calcNameSuffix(loopDate.getYear(), loopDate.getMonth());
-            TemplateUsageDataDo firstData = templateUsageDataShardingDao.getFirstData(suffix, loopDate);
-            if (Objects.nonNull(firstData)) {
-                int beginId = firstData.getId();
-                boolean singleDayContinue = true;
-
-                // TODO 替换dao 从DB 中查询 >= 此ID 的 1000 条数据
-                List<TemplateUsageDataDo> list = templateUsageDataShardingDao.getUserPointBillDos(suffix, beginId, 0, 1000);
-                for (; CollectionUtils.isNotEmpty(list) && singleDayContinue; ) {
-                    if (CollectionUtils.isNotEmpty(list)) {
-                        for (TemplateUsageDataDo loopDo : list) {
-                            // 比较当前数据循环的日期，看是否存在大于循环日期的
-                            Date currentDate = loopDo.getCreateTime();
-                            Instant instant = currentDate.toInstant();
-                            ZoneId zoneId = ZoneId.systemDefault();
-                            LocalDate currentLocalDate = instant.atZone(zoneId).toLocalDate();
-                            if (currentLocalDate.isAfter(loopDate)) {
-                                singleDayContinue = false;
-                                break;
-                            }
-                            
-                            // TODO 统计 逻辑写在此处
-                            
-                            
-                            // 更新开始时间
-                            if (loopDo.getId() > beginId) {
-                                beginId = loopDo.getId() + 1;
-                            }
-                        }
-                        // 替换Dao
-                        list = templateUsageDataShardingDao.getUserPointBillDos(suffix, beginId, 0, 1000);
-                    }
-                }
-            }
-            loopDate = loopDate.plusDays(1);
+public void work(){
+        ICache codelistCache = cacheDef.getCODELIST_CACHE();
+        String startIdStr = codelistCache.get(UPDATE_DESIGN_COOPERATIONS_TEAM_ID_FLAG);
+        Integer startId = 0;
+        if(StringUtil.isNotEmpty(startIdStr)){
+            startId = Integer.parseInt(startIdStr);
         }
 
+        // 1. 获取数据
+        for (; ; ) {
+            List<DesDesignCooperationsForUpdateDto> updateDtoList =  desDesignCooperationsDao.getCooperationsForUpdateTeamId(startId);
+            if(CollectionUtils.isEmpty(updateDtoList)){
+                // 无最新记录
+                break;
+            }
+
+            // 2.1 遍历数据收集  数据的二次处理
+            Set<String> designIds = new HashSet<>();
+            for (DesDesignCooperationsForUpdateDto loopDto : updateDtoList) {
+				// 更新startId
+                startId = loopDto.getId();            
+
+            }
+			// 2.2 为更新封装 Dto 集合
+            if(!designIds.isEmpty()) {
+
+                if(CollectionUtils.isNotEmpty(toUpdateCooperationsDos)){
+                    // 3.2 批量更新
+                    desDesignCooperationsDao.batchUpdateTeamId(toUpdateCooperationsDos);
+                }
+            }
+			
+            // 设置下一次执行的redis 值
+            codelistCache.set(UPDATE_DESIGN_COOPERATIONS_TEAM_ID_FLAG,startId.toString());
+
+        }
+    }
 ```
+
+## 定时统计任务
+```java
+	public void work(){
+        // 1.1 今日日期
+        LocalDateTime endDateTime = LocalDateTime.now();
+        endDateTime = endDateTime.withHour(0);
+        endDateTime = endDateTime.withMinute(0);
+        endDateTime = endDateTime.withSecond(0);
+        endDateTime = endDateTime.withNano(0);
+        endDateTime = endDateTime.withDayOfMonth(1);
+
+        // 1.2 从redis 获取这次开始月份，默认上个月
+        ICache codeListCache = cacheDef.getCODELIST_CACHE();
+		// TODO 更改RedisKey
+        String startDateStr = codeListCache.get(RedisKeyConst.Print.PRINT_ORDER_STATISTICS_START_MONTH);
+
+        LocalDateTime startDateTime = null;
+        if(StringUtil.isNotEmpty(startDateStr)){
+            startDateTime = LocalDateTime.parse(startDateStr + "-01 00:00:00", DateTimeFormatter.ofPattern(DateUtilEYK.DateFormatEnum.u.getValue()));
+        }else{
+            // 开始日期 默认设置为上个月的
+            startDateTime = endDateTime.plusMonths(-1);
+        }
+
+        LocalDateTime loopDateTime = startDateTime;
+        // 开始月份 = 结束月份  或者 开始月份 < 结束月份 【循环进行】
+        while (loopDateTime.isBefore(endDateTime)){
+            // TODO 此处写业务统计代码
+            statisticsRepeatBuyRate(loopDateTime);
+
+            // 获取当前循环月份+1
+            loopDateTime = loopDateTime.plusMonths(1);
+        }
+		
+		// TODO 更改RedisKey
+        codeListCache.set(RedisKeyConst.Print.PRINT_ORDER_STATISTICS_START_MONTH,endDateTime.format(DateTimeFormatter.ofPattern(DateUtilEYK.DateFormatEnum.yyyyMM.getValue())));
+
+    }
+```
+
+## 分批量获取统计数据（以1000分隔）
+
+```java
+     // TODO  更改Dao相应的方法，此方法名称，及业务处理代码
+	 private Set<Integer> getPaySuccessUserIds(LocalDateTime startDateTime, LocalDateTime endDateTime) {
+        // 1. 获取这个月第一个订单
+        TreeSet<Integer> userIdSet = new TreeSet<>();
+        PrintOrderStatisticDto orderDto = printOrderDao.getFirstData(startDateTime);
+        if(orderDto == null){
+            return userIdSet;
+        }
+        int beginId = orderDto.getId();
+        boolean isContinue = true;
+
+        // 正式limit 改成 1000
+        int limit = 1000;
+	
+        List<PrintOrderStatisticDto> orderDtos =  printOrderDao.getPrintOrderStatisticsDto(beginId,0,limit);
+        while (orderDtos.size() > 0  && isContinue){
+            // 2. 遍历数据，统计出订单支付成功、退款状态=未退款的用户ID
+            for (PrintOrderStatisticDto loopOrderDto : orderDtos) {
+                 LocalDateTime loopDateTime = loopOrderDto.getCreateTime();
+                 if(loopDateTime.isEqual(endDateTime) || loopDateTime.isAfter(endDateTime)){
+                    isContinue = false;
+                    break;
+                 }
+                // TODO 此处写业务代码
+            }
+            orderDtos =  printOrderDao.getPrintOrderStatisticsDto(beginId ,1,limit);
+        }
+        return userIdSet;
+
+    }
+```
+
+
 
 
 # api service 编写
@@ -150,6 +214,56 @@ public PageResult<TemplateSearchInfoTupleDo> getKeyWordMap(String mapKind,Intege
 	ServerResponse getVideoKind(Integer forTest); 
 	尽量使用对象形式，少用ServerResponse
 	示例：List<VideoKindDo> getVideoKind(Integer forTest); 
+
+
+# 枚举类创建模板
+
+```java 
+	NO_START(0,"未开始"),
+
+    ING(1,"进行中"),
+
+    OVER(2,"已结束");
+    private int value;
+    private String description;
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public int getValue() {
+        return value;
+    }
+
+    public void setValue(int value) {
+        this.value = value;
+    }
+
+    PrintTimeLimitActivityStateEnum(int value, String description) {
+        this.value = value;
+        this.description = description;
+    }
+
+    /**
+     * @desc 根据value获取枚举
+     * @author liuph
+     * @date  2019/06/11 10:25
+     * @return 对应的枚举值optional
+     */
+    public static Optional<PrintTimeLimitActivityStateEnum> getInstance(int value) {
+        return Stream.of(PrintTimeLimitActivityStateEnum.values())
+                .filter(e -> e.value == value)
+                .findFirst();
+    }
+```
+- 注：替换相应的枚举、名称 （PrintTimeLimitActivityStateEnum）
+
+
+
 
 
 

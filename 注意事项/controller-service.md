@@ -26,6 +26,7 @@ public class TemplateUserFavoriteAction{
 
 - 方法保证每一个参数都有必要的解释
 
+
 # 权限
 
 - 涉及用户内容的操作 
