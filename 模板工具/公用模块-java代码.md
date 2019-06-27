@@ -1,5 +1,7 @@
 # 接口请求规范
 
+- `模板只是帮助，需要根据实际业务变化使用，切勿强硬套用`
+
 ## admin 
 ```java
 	@Autowired
@@ -131,7 +133,7 @@ public void work(){
     }
 ```
 
-## 定时统计任务
+## 定时统计任务【天、月时间段数据统计】
 ```java
 	public void work(){
         // 1.1 今日日期
@@ -171,7 +173,7 @@ public void work(){
     }
 ```
 
-## 分批量获取统计数据（以1000分隔）
+## 分批量获取数据【统计】（以1000分隔）
 
 ```java
      // TODO  更改Dao相应的方法，此方法名称，及业务处理代码
@@ -204,6 +206,26 @@ public void work(){
         return userIdSet;
 
     }
+```
+
+## 分批量获取数据【刷新缓存】（以1000分隔）
+
+```java
+        //  正式改为1000
+        int limit = 1000;
+        int startId = 0;
+		// TODO 获取数据Dao修改
+        List<TemplateSearchInfoTupleDo> tupleDos =  templateSearchInfoTupleDao.findKeyWord(startId,0,limit);
+        
+        // TODO 封装集合定义
+        
+        while (tupleDos.size() > 0){
+            for (TemplateSearchInfoTupleDo loopTupleDo : tupleDos) {
+                startId = loopTupleDo.getId();
+            }
+			// TODO 获取数据Dao修改
+            tupleDos = templateSearchInfoTupleDao.findKeyWord(startId,0,limit);
+        }
 ```
 
 
