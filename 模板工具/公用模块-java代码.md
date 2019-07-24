@@ -9,7 +9,7 @@
 	
 	String url = localProperties.getApiV2Domain() + ".do";
 	Map<String, Object> signMap = new HashMap<>();
-	com.alibaba.fastjson.JSONObject jsonObject = HttpUtil.getBodyStringForApiV2(url,SignUtil.requestMapBasicSign(signMap),3000);
+	JSONObject jsonObject = HttpUtil.getBodyStringForApiV2(url,SignUtil.requestMapBasicSign(signMap),3000);
 
 	if(jsonObject != null){
 	 String code = jsonObject.getString("code");
@@ -28,7 +28,7 @@
 		return ServerResponse.createByError(-101, "签名错误");
 	}
 	
-# 缓存建立规范
+# 大数据量处理（缓存/定时任务）
 
 ## 需要oss 和 redis 双重缓存
 
@@ -231,14 +231,10 @@ public void work(){
 
 
 
-# api service 编写
-
-	ServerResponse getVideoKind(Integer forTest); 
-	尽量使用对象形式，少用ServerResponse
-	示例：List<VideoKindDo> getVideoKind(Integer forTest); 
+# model类模板
 
 
-# 枚举类创建模板
+## 枚举类创建模板
 
 ```java 
 	NO_START(0,"未开始"),
@@ -285,6 +281,25 @@ public void work(){
 - 注：替换相应的枚举、名称 （PrintTimeLimitActivityStateEnum）
 
 
+## 批量更新（一次1000）(循环模板)
+```java
+	int pageSize = 1000;
+	int count = cacheBos.size();
+	// 计算总页数
+	int totalPage = count % pageSize == 0 ? count / pageSize : count / pageSize + 1;
+	
+	// pageSize 6个数据 分一页
+	for (int i = 0; i < totalPage; i++) {
+		int page = i + 1;
+		int startIndex = i * pageSize;
+
+		List<OfficialVideoBo> onePageData = cacheBos.stream()
+				.skip(startIndex).limit(pageSize)
+				.collect(Collectors.toList());
+
+	
+	}
+```
 
 
 
