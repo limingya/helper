@@ -7,7 +7,18 @@
 闭坑操作举例： 
 
 ```java
-  private void refreshCache() {
+    
+     /**
+     * 每次插入redis 缓存的个数大小
+     */
+    private final int EVERY_REDIS_CACHE_SIZE = 50;
+
+    /**
+     * 每次刷新缓存睡眠时间
+     */
+    private final long EVERY_REFRESH_CACHE_SLEEP_TIME = 100;
+    
+    private void refreshCache() {
         // 1. 移除原有缓存
         ICache codeListCache = cacheDef.getCODELIST_CACHE();
         Map<String,String> toRefreshCacheMap = new HashMap<>();
@@ -44,6 +55,13 @@
     }
 ```  
 
+- 40万数据刷入redis用时记录
+
+| EVERY_REDIS_CACHE_SIZE| 开始时间| 结束时间| 总用时 | rename时间 | 
+|---|---|---|---|---|
+|10  | 2019-08-07 10:38:01 | 2019-08-07 11:50:11 | 72分钟 | 0秒   |
+|50  | 2019-08-07 12:49:30 | 2019-08-07 13:04:13 | 15分钟 | 0秒   |
+|100 | 2019-08-07 13:45:30 | 2019-08-07 13:53:49 | 8分钟  | 1秒   |
 
 
 # 参考文档
