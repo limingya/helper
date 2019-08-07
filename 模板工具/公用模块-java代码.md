@@ -7,16 +7,24 @@
 	@Autowired
     private LocalProperties localProperties;	
 	
-	String url = localProperties.getApiV2Domain() + ".do";
-	Map<String, Object> signMap = new HashMap<>();
-	JSONObject jsonObject = HttpUtil.getBodyStringForApiV2(url,SignUtil.requestMapBasicSign(signMap),3000);
+	 String url = localProperties.getApiV2Domain() + ".do";
+		Map<String, Object> signMap = new HashMap<>();
+		JSONObject jsonObject = HttpUtil.getBodyStringForApiV2(url, SignUtil.requestMapBasicSign(signMap),3000);
 
-	if(jsonObject != null){
-	 String code = jsonObject.getString("code");
-	 if (HttpStatus.SC_OK == Integer.valueOf(code)) {
-		 
-	 }
-	}
+		if(jsonObject != null){
+			String code = jsonObject.getString("code");
+			if (HttpStatus.SC_OK == Integer.valueOf(code)) {
+				JSONObject data = jsonObject.getJSONObject("data");
+				return mv.addObject("msg",data);
+			}else{
+				String msg = jsonObject.getString("msg");
+				mv.addObject("code",Integer.parseInt(code));
+				mv.addObject("msg",msg);
+			}
+		}
+
+		mv.addObject("code",-2);
+		return null;
 	
 	
 ```
@@ -89,49 +97,6 @@ public PageResult<TemplateSearchInfoTupleDo> getKeyWordMap(String mapKind,Intege
 ```
 - 注：通过存oss 的缓存，用新文件去覆盖旧文件的更新，一定要考虑内容为空时，旧文件是否删除，若不删除会出现则前端同步出错 
 
-
-
-## 批量`更新`表中某个`字段`
-	
-```java
-public void work(){
-        ICache codelistCache = cacheDef.getCODELIST_CACHE();
-        String startIdStr = codelistCache.get(UPDATE_DESIGN_COOPERATIONS_TEAM_ID_FLAG);
-        Integer startId = 0;
-        if(StringUtil.isNotEmpty(startIdStr)){
-            startId = Integer.parseInt(startIdStr);
-        }
-
-        // 1. 获取数据
-        for (; ; ) {
-            List<DesDesignCooperationsForUpdateDto> updateDtoList =  desDesignCooperationsDao.getCooperationsForUpdateTeamId(startId);
-            if(CollectionUtils.isEmpty(updateDtoList)){
-                // 无最新记录
-                break;
-            }
-
-            // 2.1 遍历数据收集  数据的二次处理
-            Set<String> designIds = new HashSet<>();
-            for (DesDesignCooperationsForUpdateDto loopDto : updateDtoList) {
-				// 更新startId
-                startId = loopDto.getId();            
-
-            }
-			// 2.2 为更新封装 Dto 集合
-            if(!designIds.isEmpty()) {
-
-                if(CollectionUtils.isNotEmpty(toUpdateCooperationsDos)){
-                    // 3.2 批量更新
-                    desDesignCooperationsDao.batchUpdateTeamId(toUpdateCooperationsDos);
-                }
-            }
-			
-            // 设置下一次执行的redis 值
-            codelistCache.set(UPDATE_DESIGN_COOPERATIONS_TEAM_ID_FLAG,startId.toString());
-
-        }
-    }
-```
 
 ## 定时统计任务【天、月时间段数据统计】
 ```java
@@ -229,8 +194,6 @@ public void work(){
 ```
 
 
-
-
 # model类模板
 
 
@@ -296,11 +259,11 @@ public void work(){
 		List<OfficialVideoBo> onePageData = cacheBos.stream()
 				.skip(startIndex).limit(pageSize)
 				.collect(Collectors.toList());
-
-	
 	}
+	
 ```
+- 注：此处改为在收集时操作，做法如下
 
-
+![](doc/media/177c602e.png)
 
 

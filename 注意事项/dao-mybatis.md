@@ -8,13 +8,13 @@ EXPLAIN select id,title
 from official_video
 where id = 110 or title = '葡萄'
 ```
-![](doc/media/979746a5.png)
+![](media/979746a5.png)
 
 正确示例如下： 
 ```sql
  select id,title from official_video where id = 110
 ```
-![](doc/media/99e62645.png)
+![](media/99e62645.png)
 
 
 ## 1.2 <if test= "" />	尽量不要出现不是数据库表对应字段的情况
